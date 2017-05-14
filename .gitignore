@@ -1,4 +1,4 @@
-calibration.txt
-clips/
-README.md
+benchmark_velocity/
 *.py[cod]
+*.h5
+*.npy
