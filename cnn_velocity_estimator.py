@@ -14,11 +14,14 @@ file_prefix = "./benchmark_velocity/clips/"
 train_images_resized = []
 train_velocities = []
 
-# Use first half of data for training
+# Shuffle indices of data samples randomly (in case samples are ordered in some way)
+random_indices = np.random.permutation(range(1, 247))
+
+# Use half of data for training
 for i in range(123):
     print i
     # Open annotation file
-    annotation_file = file_prefix + "{0:0=3d}".format(i + 1) + "/annotation.json"
+    annotation_file = file_prefix + "{0:0=3d}".format(random_indices[i]) + "/annotation.json"
     with open(annotation_file) as json_data:
         annotations = json.load(json_data)
     # Extract bounding boxes and velocities of cars
@@ -27,7 +30,7 @@ for i in range(123):
         bbox = annotations[j]['bbox']
         bboxes.append((int(bbox['top']), int(bbox['bottom']), int(bbox['left']), int(bbox['right'])))
         train_velocities.append(annotations[j]['velocity'])
-    image_folder = file_prefix + "{0:0=3d}".format(i + 1) + "/img/"
+    image_folder = file_prefix + "{0:0=3d}".format(random_indices[i]) + "/img/"
     images = []
     # Loop over bounding boxes for current example
     for bbox in bboxes:
@@ -46,12 +49,8 @@ for i in range(123):
 
 train_images_resized = np.array(train_images_resized)
 train_velocities = np.array(train_velocities)
-np.save("train_images_merged_resized.npy", train_images_resized)
-np.save("train_velocities.npy", train_velocities)
-'''
-train_images_resized = np.load("train_images_merged_resized.npy")
-train_velocities = np.load("train_velocities.npy")
-'''
+np.save("train_images_merged_resized_shuffle.npy", train_images_resized)
+np.save("train_velocities_shuffle.npy", train_velocities)
 
 # create the base pre-trained model (InceptionV3 pretrained on ImageNet)
 # The base model and the fine training code was obtained from here:
@@ -105,14 +104,19 @@ model.compile(optimizer=SGD(lr=0.0001, momentum=0.9), loss='mean_squared_error')
 # we train our model again (this time fine-tuning the top 2 inception blocks
 # alongside the top Dense layers
 model.fit(train_images_resized, train_velocities, epochs=10)
-model.save("cnn_velocity_estimator.h5")
+model.save("cnn_velocity_estimator_shuffled.h5")
+
+# Predict velocities for training data and evaluate model on training data
+train_predicted_velocities = model.predict(train_images_resized)
+np.save("train_predicted_velocities_shuffle.npy", train_predicted_velocities)
 print model.evaluate(train_images_resized, train_velocities)
+print np.sum(np.square(train_velocities - train_predicted_velocities)) / np.sum(np.square(train_velocities))
 
 test_images_resized = []
 test_velocities = []
-# Use second half of data for testing and preprocess it the same way as training data
-for i in range(123):
-    annotation_file = file_prefix + "{0:0=3d}".format(i + 124) + "/annotation.json"
+# Use other half of data for testing and preprocess it the same way as training data
+for i in range(123, 246):
+    annotation_file = file_prefix + "{0:0=3d}".format(random_indices[i]) + "/annotation.json"
     with open(annotation_file) as json_data:
         annotations = json.load(json_data)
     bboxes = []
@@ -120,7 +124,7 @@ for i in range(123):
         bbox = annotations[j]['bbox']
         bboxes.append((int(bbox['top']), int(bbox['bottom']), int(bbox['left']), int(bbox['right'])))
         test_velocities.append(annotations[j]['velocity'])
-    image_folder = file_prefix + "{0:0=3d}".format(i + 124) + "/img/"
+    image_folder = file_prefix + "{0:0=3d}".format(random_indices[i]) + "/img/"
     images = []
     for bbox in bboxes:
         images_cropped = []
@@ -134,16 +138,13 @@ for i in range(123):
 
 test_images_resized = np.array(test_images_resized)
 test_velocities = np.array(test_velocities)
-np.save("test_images_merged_resized.npy", test_images_resized)
-np.save("test_velocities.npy", test_velocities)
+np.save("test_images_merged_resized_shuffle.npy", test_images_resized)
+np.save("test_velocities_shuffle.npy", test_velocities)
+
+# Predict velocities for test data and evaluate model on test data
 print model.evaluate(test_images_resized, test_velocities)
-'''
-test_images_resized = np.load("test_images_merged_resized.npy")
-test_velocities = np.load("test_velocities.npy")
-model = load_model("cnn_velocity_estimator.h5")
-'''
 predicted_velocities = model.predict(test_images_resized)
-np.save("predicted_velocities.npy", predicted_velocities)
-print np.sum(np.square(test_velocities - predicted_velocities)) / (predicted_velocities.size + 0.0)
+np.save("predicted_velocities_shuffle.npy", predicted_velocities)
+
 print np.sum(np.square(test_velocities - predicted_velocities)) / np.sum(np.square(test_velocities))
 
