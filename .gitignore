@@ -1,5 +1,5 @@
 benchmark_velocity/
+benchmark_velocity_supp/
 *.py[cod]
 *.h5
-*.npy
 *.DS_Store
