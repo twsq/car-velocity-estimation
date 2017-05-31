@@ -20,11 +20,11 @@ computer, the network takes quite a long time to train (something like 10 minute
 file_prefix = "./benchmark_velocity/clips/"
 
 '''
-Below code (currently commented out) can be used to process a random half of the data 
-as training data. Can modify it to add various amounts of padding to the bounding boxes since 
+Below code is used to process a random half of the data as training data. 
+Can modify it to add various amounts of padding to the bounding boxes since 
 the bounding box of a car might change for different frames.
 '''
-'''
+
 train_sequences_resized = []
 train_velocities = []
 
@@ -72,12 +72,13 @@ train_velocities = np.array(train_velocities)
 
 np.save("rcnn_train_images_merged_resized_shuffle.npy", train_sequences_resized)
 np.save("rcnn_train_velocities_shuffle.npy", train_velocities)
-'''
 
+'''
 # Load saved preprocessed training data (array of sequences of cropped frames corresponding to a car) and saved velocities
 # Currently use last 5 frames of each sequence as input
 train_sequences_resized = np.load("rcnn_train_images_merged_resized_shuffle.npy")[:, -5:, :, :]
 train_velocities = np.load("rcnn_train_velocities_shuffle.npy")
+'''
 
 import tensorflow as tf
 from keras.applications.inception_v3 import InceptionV3
@@ -173,7 +174,7 @@ Below code (currently commented out) can be used to process other half of the da
 as test data. Can modify it to add various amounts of padding to the bounding boxes since 
 the bounding box of a car might change for different frames.
 '''
-'''
+
 test_sequences_resized = []
 test_velocities = []
 
@@ -217,7 +218,7 @@ np.save("rcnn_test_velocities_shuffle.npy", test_velocities)
 # Currently use last 5 frames of sequence as input
 test_sequences_resized = np.load("rcnn_test_images_merged_resized_shuffle.npy")[:, -5:, :, :]
 test_velocities = np.load("rcnn_test_velocities_shuffle.npy")
-
+'''
 # Predict velocities for test data and evaluate model on test data
 print model.evaluate(test_images_resized, test_velocities)
 predicted_velocities = model.predict(test_images_resized)
