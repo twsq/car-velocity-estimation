@@ -121,7 +121,7 @@ rcnn_model = Dense(128, activation='relu')(rcnn_model)
 rcnn_model = Dense(2)(rcnn_model)
 
 # this is the model we will train
-model = Model(inputs=[video], outputs=rcnn_model)
+model = Model(inputs=[input], outputs=rcnn_model)
 
 # first: train only the top layers (which were randomly initialized)
 # i.e. freeze all convolutional InceptionV3 layers
@@ -158,16 +158,16 @@ model.compile(optimizer=SGD(lr=0.0001, momentum=0.9), loss='mean_squared_error')
 
 # we train our model again (this time fine-tuning the top 2 inception blocks
 # alongside the top Dense layers
-model.fit(train_images_resized, train_velocities, epochs=5)
+model.fit(train_sequences_resized, train_velocities, epochs=10)
 
 # Save weights of model (due to the Lambda layer, saving 
 # the whole model with model.save and loading model with load_model doesn't work)
 model.save_weights("rcnn_velocity_estimator_shuffled.h5")
 
 # Predict velocities for training data and evaluate model on training data
-train_predicted_velocities = model.predict(train_images_resized)
+train_predicted_velocities = model.predict(train_sequences_resized)
 np.save("rcnn_train_predicted_velocities_shuffle.npy", train_predicted_velocities)
-print model.evaluate(train_images_resized, train_velocities)
+print model.evaluate(train_sequences_resized, train_velocities)
 print np.sum(np.square(train_velocities - train_predicted_velocities)) / np.sum(np.square(train_velocities))
 '''
 Below code (currently commented out) can be used to process other half of the data 
@@ -220,8 +220,8 @@ test_sequences_resized = np.load("rcnn_test_images_merged_resized_shuffle.npy")[
 test_velocities = np.load("rcnn_test_velocities_shuffle.npy")
 '''
 # Predict velocities for test data and evaluate model on test data
-print model.evaluate(test_images_resized, test_velocities)
-predicted_velocities = model.predict(test_images_resized)
+print model.evaluate(test_sequences_resized, test_velocities)
+predicted_velocities = model.predict(test_sequences_resized)
 np.save("rcnn_predicted_velocities_shuffle.npy", predicted_velocities)
 
 print np.sum(np.square(test_velocities - predicted_velocities)) / np.sum(np.square(test_velocities))
